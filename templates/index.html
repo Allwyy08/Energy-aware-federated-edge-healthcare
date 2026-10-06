@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy-Aware FL Simulator | Tamil Nadu Regional Deployment</title>
+    <!-- Outfit Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #080c14;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            --accent-cyan: #06b6d4;
+            --accent-cyan-glow: rgba(6, 182, 212, 0.3);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --console-bg: #030712;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #090d16 0%, #030712 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 24px;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background glows */
+        .ambient-glow-1 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: -100px;
+            left: -100px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .ambient-glow-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, rgba(0,0,0,0) 70%);
+            bottom: -150px;
+            right: -100px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Header Style */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .header-title h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, #8b5cf6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .status-badge-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.stopped {
+            background: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Dashboard Layout Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.3fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 12px;
+        }
+
+        .card-header h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Control Panel */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input[type="number"], input[type="range"] {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        select:focus, input[type="number"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .range-value {
+            font-weight: 600;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        /* Buttons styling */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, #6d28d9 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Client locations styling */
+        .client-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .client-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .client-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .client-card.active {
+            border-color: var(--accent-cyan);
+            background: rgba(6, 182, 212, 0.05);
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.1);
+        }
+
+        .client-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .client-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #ffffff;
+        }
+
+        .client-location-tag {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--accent-cyan);
+            background: rgba(6, 182, 212, 0.15);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .client-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.8rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Battery Indicators */
+        .battery-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .battery-fill {
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s ease;
+        }
+
+        .battery-fill.warning {
+            background: var(--warning);
+        }
+
+        .battery-fill.danger {
+            background: var(--danger);
+        }
+
+        /* Configurator Overlay/Subpanel */
+        .config-overlay {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .config-overlay.open {
+            display: flex;
+        }
+
+        /* Console styling */
+        .console-container {
+            background: var(--console-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'Space Grotesk', monospace;
+            font-size: 0.8rem;
+            color: #10b981;
+            height: 250px;
+            overflow-y: auto;
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .console-line {
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .console-error {
+            color: var(--danger);
+        }
+
+        .console-warn {
+            color: var(--warning);
+        }
+
+        .console-info {
+            color: var(--accent-cyan);
+        }
+
+        /* Summary Dashboard Items */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .metric-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .metric-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .metric-card .label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Charts styling */
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .chart-wrapper {
+            background: rgba(15, 23, 42, 0.3);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            height: 260px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Scrollbar custom styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <div class="header-title">
+                <h1>ENERGY-AWARE FL SIMULATOR</h1>
+                <p>Tamil Nadu Forest Borders & Hill Stations Decentralized Deployment</p>
+            </div>
+            <div class="status-badge-container">
+                <div class="status-badge">
+                    <div id="statusDot" class="status-dot"></div>
+                    <span id="statusText">IDLE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- SUMMARY METRICS -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="value" id="metricRound">-</div>
+                <div class="label">Current Round</div>
+            </div>
+            <div class="metric-card">
+                <div class="value" id="metricAccuracy">-</div>
+                <div class="label">Best Accuracy</div>
+            </div>
+            <div class="metric-card">
+                <div class="value" id="metricDropped" style="color: var(--danger);">-</div>
+                <div class="label">Packets Dropped</div>
+            </div>
+            <div class="metric-card">
+                <div class="value" id="metricBattery">-</div>
+                <div class="label">Avg Battery</div>
+            </div>
+        </div>
+
+        <!-- MAIN LAYOUT -->
+        <div class="dashboard-grid">
+            <!-- LEFT COLUMN: CONTROLS & ENVIRONMENT -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- CONFIGURATOR -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            Simulation Parameters
+                        </h2>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="strategy">FL Aggregation Strategy</label>
+                        <select id="strategy" onchange="toggleStrategyParams()">
+                            <option value="fedavg">Synchronous FedAvg</option>
+                            <option value="fedasync">Asynchronous FedAsync (Delay Resilient)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rounds">Rounds of Training</label>
+                        <div class="range-container">
+                            <input type="range" id="rounds" min="1" max="25" value="10" oninput="document.getElementById('roundsVal').innerText = this.value">
+                            <span class="range-value" id="roundsVal">10</span>
+                        </div>
+                    </div>
+
+                    <!-- Async Strategy Parameters -->
+                    <div id="asyncParams" style="display: none; flex-direction: column; gap: 20px;">
+                        <div class="form-group">
+                            <label for="alpha">FedAsync alpha (Mixing Rate)</label>
+                            <div class="range-container">
+                                <input type="range" id="alpha" min="0.1" max="1.0" step="0.1" value="0.6" oninput="document.getElementById('alphaVal').innerText = this.value">
+                                <span class="range-value" id="alphaVal">0.6</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="staleness">Staleness Power (Penalty)</label>
+                            <div class="range-container">
+                                <input type="range" id="staleness" min="0.5" max="2.5" step="0.5" value="1.0" oninput="document.getElementById('stalenessVal').innerText = this.value">
+                                <span class="range-value" id="stalenessVal">1.0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button id="btnStart" class="btn-primary" onclick="startSim()">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Start Simulation
+                        </button>
+                        <button id="btnStop" class="btn-danger" onclick="stopSim()" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect></svg>
+                            Stop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CLIENT NODES -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                            Simulated Regional Edge Clients
+                        </h2>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Click node to edit parameters</span>
+                    </div>
+
+                    <div class="client-list" id="clientList">
+                        <!-- Node cards dynamically rendered -->
+                    </div>
+
+                    <!-- Client Editor panel -->
+                    <div class="config-overlay" id="clientConfigOverlay">
+                        <h3 id="editClientTitle" style="font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; font-weight:600; color: #ffffff;">Edit Client Parameter</h3>
+                        <div class="form-group">
+                            <label>Starting Battery Level (%)</label>
+                            <div class="range-container">
+                                <input type="range" id="editBattery" min="5" max="100" value="100" oninput="document.getElementById('editBatteryVal').innerText = this.value + '%'">
+                                <span class="range-value" id="editBatteryVal">100%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Network Channel Reliability</label>
+                            <div class="range-container">
+                                <input type="range" id="editReliability" min="0.1" max="1.0" step="0.05" value="0.9" oninput="document.getElementById('editReliabilityVal').innerText = Math.round(this.value * 100) + '%'">
+                                <span class="range-value" id="editReliabilityVal">90%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Packet Drop Probability</label>
+                            <div class="range-container">
+                                <input type="range" id="editDrop" min="0.0" max="0.9" step="0.05" value="0.1" oninput="document.getElementById('editDropVal').innerText = Math.round(this.value * 100) + '%'">
+                                <span class="range-value" id="editDropVal">10%</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-primary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="saveClientConfig()">Apply Change</button>
+                            <button class="btn-danger" style="padding: 6px 12px; font-size: 0.85rem; background: #374151;" onclick="closeClientConfig()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: VISUALIZATIONS & LOG CONSOLE -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <!-- CHART MATRICES -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                            Real-time Performance Visualizations
+                        </h2>
+                    </div>
+
+                    <div class="charts-container">
+                        <div class="chart-wrapper">
+                            <canvas id="accuracyChart"></canvas>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="batteryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONSOLE TERMINAL -->
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                            Simulation Output Terminal
+                        </h2>
+                        <button style="background: rgba(255,255,255,0.05); padding: 4px 8px; font-size: 0.75rem; border-radius: 4px; flex: none;" onclick="clearConsole()">Clear</button>
+                    </div>
+                    <div class="console-container" id="terminal">
+                        <div class="console-line console-info">[Web Server] System standing by. Customize parameters and hit Start.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Preset client details representing geographical deployment regions
+        let clients = [
+            { id: "0", name: "Ooty Base Station", location: "Nilgiris (Open Hill)", battery: 100.0, reliability: 0.95, packet_drop: 0.02 },
+            { id: "1", name: "Yercaud Coffee Estate", location: "Shevaroys (Slope)", battery: 100.0, reliability: 0.80, packet_drop: 0.05 },
+            { id: "2", name: "Kodaikanal Valley", location: "Palani Hills (Forest Edge)", battery: 100.0, reliability: 0.50, packet_drop: 0.20 },
+            { id: "3", name: "Valparai Tea Range", location: "Anamalais (Deep Valley)", battery: 100.0, reliability: 0.30, packet_drop: 0.40 },
+            { id: "4", name: "Mudumalai Ranger Camp", location: "Reserve Forest (Dense Canopy)", battery: 100.0, reliability: 0.20, packet_drop: 0.50 }
+        ];
+
+        let selectedClientIdx = null;
+        let isRunning = false;
+        let sseSource = null;
+        let pollTimer = null;
+        
+        // Charts variables
+        let accuracyChart = null;
+        let batteryChart = null;
+        let batteryHistory = {
+            rounds: [0],
+            "0": [100.0],
+            "1": [100.0],
+            "2": [100.0],
+            "3": [100.0],
+            "4": [100.0]
+        };
+
+        // Initialize Charts and Load client lists
+        window.addEventListener('DOMContentLoaded', () => {
+            renderClientCards();
+            initCharts();
+            // Start light polling for status check
+            checkSystemStatus();
+            pollTimer = setInterval(checkSystemStatus, 1500);
+        });
+
+        function toggleStrategyParams() {
+            const strat = document.getElementById("strategy").value;
+            const container = document.getElementById("asyncParams");
+            if (strat === "fedasync") {
+                container.style.display = "flex";
+            } else {
+                container.style.display = "none";
+            }
+        }
+
+        // Render Client List cards
+        function renderClientCards() {
+            const container = document.getElementById("clientList");
+            container.innerHTML = "";
+            clients.forEach((c, idx) => {
+                let batteryClass = "";
+                if (c.battery < 20) batteryClass = "danger";
+                else if (c.battery < 50) batteryClass = "warning";
+
+                const activeClass = (selectedClientIdx === idx) ? "active" : "";
+
+                const cardHtml = `
+                    <div class="client-card ${activeClass}" onclick="selectClient(${idx})">
+                        <div class="client-header">
+                            <span class="client-name">${c.name}</span>
+                            <span class="client-location-tag">${c.location}</span>
+                        </div>
+                        <div class="client-stats">
+                            <div class="stat-item">
+                                <span>Signal Reliability:</span>
+                                <span class="stat-value" style="color: ${c.reliability > 0.6 ? 'var(--success)' : 'var(--warning)'}">${Math.round(c.reliability*100)}%</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Drop Prob:</span>
+                                <span class="stat-value" style="color: ${c.packet_drop > 0.3 ? 'var(--danger)' : 'var(--text-primary)'}">${Math.round(c.packet_drop*100)}%</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Current Battery:</span>
+                                <span class="stat-value">${c.battery.toFixed(1)}%</span>
+                            </div>
+                        </div>
+                        <div class="battery-bar">
+                            <div class="battery-fill ${batteryClass}" style="width: ${c.battery}%"></div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        // Edit Client details
+        function selectClient(idx) {
+            if (isRunning) {
+                logToTerminal("⚠️ Cannot edit client properties while simulation is running.", "warn");
+                return;
+            }
+            selectedClientIdx = idx;
+            renderClientCards();
+            
+            const client = clients[idx];
+            document.getElementById("editClientTitle").innerText = `Configure Node ${client.id}: ${client.name}`;
+            document.getElementById("editBattery").value = client.battery;
+            document.getElementById("editBatteryVal").innerText = client.battery + "%";
+            document.getElementById("editReliability").value = client.reliability;
+            document.getElementById("editReliabilityVal").innerText = Math.round(client.reliability * 100) + "%";
+            document.getElementById("editDrop").value = client.packet_drop;
+            document.getElementById("editDropVal").innerText = Math.round(client.packet_drop * 100) + "%";
+
+            document.getElementById("clientConfigOverlay").classList.add("open");
+        }
+
+        function saveClientConfig() {
+            if (selectedClientIdx === null) return;
+            const b = parseFloat(document.getElementById("editBattery").value);
+            const r = parseFloat(document.getElementById("editReliability").value);
+            const d = parseFloat(document.getElementById("editDrop").value);
+
+            clients[selectedClientIdx].battery = b;
+            clients[selectedClientIdx].reliability = r;
+            clients[selectedClientIdx].packet_drop = d;
+
+            closeClientConfig();
+            renderClientCards();
+            logToTerminal(`⚙️ Updated client configurations for ${clients[selectedClientIdx].name}.`, "info");
+        }
+
+        function closeClientConfig() {
+            selectedClientIdx = null;
+            document.getElementById("clientConfigOverlay").classList.remove("open");
+            renderClientCards();
+        }
+
+        // Start Simulation
+        function startSim() {
+            if (isRunning) return;
+            
+            // Collect client configs override
+            const clientConfigs = {};
+            clients.forEach(c => {
+                clientConfigs[c.id] = {
+                    battery: c.battery,
+                    reliability: c.reliability,
+                    packet_drop: c.packet_drop
+                };
+            });
+
+            const body = {
+                strategy: document.getElementById("strategy").value,
+                rounds: document.getElementById("rounds").value,
+                alpha: document.getElementById("alpha").value,
+                staleness_power: document.getElementById("staleness").value,
+                client_configs: clientConfigs
+            };
+
+            // Reset local charting history
+            batteryHistory = {
+                rounds: [0],
+                "0": [clients[0].battery],
+                "1": [clients[1].battery],
+                "2": [clients[2].battery],
+                "3": [clients[3].battery],
+                "4": [clients[4].battery]
+            };
+            updateBatteryChart();
+            accuracyChart.data.labels = [0];
+            accuracyChart.data.datasets[0].data = [0.10]; // initial baseline for MNIST random
+            accuracyChart.update();
+
+            document.getElementById("btnStart").disabled = true;
+            document.getElementById("btnStop").disabled = false;
+            clearConsole();
+            logToTerminal("🚀 Connecting to backend server and preparing datasets...", "info");
+
+            fetch("/api/start", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    logToTerminal("✅ Simulation engine spawned. Tailing simulation.log stdout...", "info");
+                    connectSSE();
+                } else {
+                    logToTerminal("❌ Failed to start: " + data.message, "error");
+                    document.getElementById("btnStart").disabled = false;
+                    document.getElementById("btnStop").disabled = true;
+                }
+            })
+            .catch(err => {
+                logToTerminal("❌ Connection Error: " + err, "error");
+                document.getElementById("btnStart").disabled = false;
+                document.getElementById("btnStop").disabled = true;
+            });
+        }
+
+        // Stop Simulation
+        function stopSim() {
+            fetch("/api/stop", { method: "POST" })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    logToTerminal("🛑 Cancellation flag written. The simulation will shut down on the next client round...", "warn");
+                } else {
+                    logToTerminal("❌ Stop request failed: " + data.message, "error");
+                }
+            });
+        }
+
+        // SSE Logs connection
+        function connectSSE() {
+            if (sseSource) sseSource.close();
+
+            sseSource = new EventSource("/api/stream-logs");
+            sseSource.onmessage = (event) => {
+                let text = event.data;
+                
+                // Identify log types for colors
+                let type = "normal";
+                if (text.includes("ERROR") || text.includes("❌")) type = "error";
+                else if (text.includes("WARNING") || text.includes("⚠️") || text.includes("refused")) type = "warn";
+                else if (text.includes("Round") || text.includes("successfully") || text.includes("---")) type = "info";
+
+                logToTerminal(text, type);
+            };
+
+            sseSource.onerror = () => {
+                // If it ends or fails, we let the status polling determine running state.
+                sseSource.close();
+                sseSource = null;
+            };
+        }
+
+        // System Poll status updates
+        function checkSystemStatus() {
+            fetch("/api/status")
+            .then(res => res.json())
+            .then(data => {
+                isRunning = data.running;
+                
+                // Update UI state indicators
+                const dot = document.getElementById("statusDot");
+                const text = document.getElementById("statusText");
+                const btnStart = document.getElementById("btnStart");
+                const btnStop = document.getElementById("btnStop");
+
+                if (isRunning) {
+                    dot.className = "status-dot active";
+                    text.innerText = "RUNNING SIMULATION";
+                    btnStart.disabled = true;
+                    btnStop.disabled = false;
+                } else {
+                    dot.className = "status-dot";
+                    text.innerText = "IDLE";
+                    btnStart.disabled = false;
+                    btnStop.disabled = true;
+                    
+                    if (sseSource) {
+                        logToTerminal("[Web Server] Simulation execution thread finalized.", "info");
+                        sseSource.close();
+                        sseSource = null;
+                    }
+                }
+
+                // Update Client visual batteries & channels
+                for (let i = 0; i < 5; i++) {
+                    const cid = i.toString();
+                    if (data.batteries[cid] !== undefined) {
+                        clients[i].battery = data.batteries[cid];
+                    }
+                    if (data.channels[cid] !== undefined) {
+                        clients[i].reliability = data.channels[cid].reliability;
+                        clients[i].packet_drop = data.channels[cid].packet_drop;
+                    }
+                }
+                renderClientCards();
+
+                // Update Metrics Counters
+                const lastRound = data.accuracy_history.length > 0 ? data.accuracy_history[data.accuracy_history.length - 1][0] : 0;
+                document.getElementById("metricRound").innerText = isRunning ? `${lastRound} / ${data.params.rounds}` : lastRound || "-";
+                
+                let bestAcc = 0;
+                data.accuracy_history.forEach(pair => {
+                    if (pair[1] > bestAcc) bestAcc = pair[1];
+                });
+                document.getElementById("metricAccuracy").innerText = bestAcc > 0 ? `${(bestAcc * 100).toFixed(2)}%` : "-";
+                document.getElementById("metricDropped").innerText = data.dropped_packets;
+
+                let sumBattery = 0;
+                for (let i = 0; i < 5; i++) sumBattery += clients[i].battery;
+                document.getElementById("metricBattery").innerText = `${(sumBattery / 5).toFixed(1)}%`;
+
+                // Update Accuracy Chart
+                if (data.accuracy_history.length > 0) {
+                    const labels = data.accuracy_history.map(pair => `R${pair[0]}`);
+                    const accData = data.accuracy_history.map(pair => pair[1]);
+                    
+                    accuracyChart.data.labels = labels;
+                    accuracyChart.data.datasets[0].data = accData;
+                    accuracyChart.update();
+                }
+
+                // Update Battery Chart
+                if (lastRound > 0 && !batteryHistory.rounds.includes(lastRound)) {
+                    batteryHistory.rounds.push(lastRound);
+                    batteryHistory["0"].push(clients[0].battery);
+                    batteryHistory["1"].push(clients[1].battery);
+                    batteryHistory["2"].push(clients[2].battery);
+                    batteryHistory["3"].push(clients[3].battery);
+                    batteryHistory["4"].push(clients[4].battery);
+                    updateBatteryChart();
+                }
+            })
+            .catch(err => {
+                // Ignore API connection failures on startup or reload
+            });
+        }
+
+        function updateBatteryChart() {
+            batteryChart.data.labels = batteryHistory.rounds.map(r => `R${r}`);
+            batteryChart.data.datasets[0].data = batteryHistory["0"];
+            batteryChart.data.datasets[1].data = batteryHistory["1"];
+            batteryChart.data.datasets[2].data = batteryHistory["2"];
+            batteryChart.data.datasets[3].data = batteryHistory["3"];
+            batteryChart.data.datasets[4].data = batteryHistory["4"];
+            batteryChart.update();
+        }
+
+        // Terminal Console output helper
+        function logToTerminal(text, type = "normal") {
+            const terminal = document.getElementById("terminal");
+            
+            // Clean ANSI escape sequences if any
+            let cleanText = text.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+
+            const line = document.createElement("div");
+            line.className = "console-line";
+            
+            if (type === "error") line.classList.add("console-error");
+            else if (type === "warn") line.classList.add("console-warn");
+            else if (type === "info") line.classList.add("console-info");
+
+            line.innerText = cleanText;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById("terminal").innerHTML = "";
+        }
+
+        // Chart.js Setup
+        function initCharts() {
+            const ctxAcc = document.getElementById('accuracyChart').getContext('2d');
+            accuracyChart = new Chart(ctxAcc, {
+                type: 'line',
+                data: {
+                    labels: ['R0'],
+                    datasets: [{
+                        label: 'Centralized Test Accuracy',
+                        data: [0.10],
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 1.0,
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) { return (value * 100) + '%' }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f3f4f6', font: { family: 'Outfit' } } }
+                    }
+                }
+            });
+
+            const ctxBat = document.getElementById('batteryChart').getContext('2d');
+            batteryChart = new Chart(ctxBat, {
+                type: 'line',
+                data: {
+                    labels: ['R0'],
+                    datasets: [
+                        { label: 'Ooty', data: [100], borderColor: '#10b981', tension: 0.2, fill: false },
+                        { label: 'Yercaud', data: [100], borderColor: '#8b5cf6', tension: 0.2, fill: false },
+                        { label: 'Kodaikanal', data: [100], borderColor: '#f59e0b', tension: 0.2, fill: false },
+                        { label: 'Valparai', data: [100], borderColor: '#ef4444', tension: 0.2, fill: false },
+                        { label: 'Mudumalai', data: [100], borderColor: '#06b6d4', tension: 0.2, fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) { return value + '%' }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#f3f4f6', font: { family: 'Outfit' } } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

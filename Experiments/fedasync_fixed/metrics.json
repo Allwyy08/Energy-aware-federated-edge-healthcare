@@ -1,0 +1,9 @@
+{
+  "experiment_name": "fedasync_fixed",
+  "total_rounds": 10,
+  "final_accuracy": 0.885,
+  "final_loss": 0.0174,
+  "total_energy_drain_pct": 72.6,
+  "total_training_time_sec": 1.68,
+  "avg_round_latency_ms": 28.68
+}

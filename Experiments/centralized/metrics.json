@@ -1,0 +1,9 @@
+{
+  "experiment_name": "centralized",
+  "total_rounds": 15,
+  "final_accuracy": 0.9217,
+  "final_loss": 0.0128,
+  "total_energy_drain_pct": 96.0,
+  "total_training_time_sec": 29.47,
+  "avg_round_latency_ms": 5.0
+}

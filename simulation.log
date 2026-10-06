@@ -1,0 +1,20 @@
+2026-09-21 19:58:43,682 - FederatedEdgeServer - INFO - Initializing Flower Distributed Edge simulation...
+2026-09-21 19:58:44,820 - alembic.runtime.plugins - INFO - setup plugin alembic.autogenerate.schemas
+2026-09-21 19:58:44,820 - alembic.runtime.plugins - INFO - setup plugin alembic.autogenerate.tables
+2026-09-21 19:58:44,820 - alembic.runtime.plugins - INFO - setup plugin alembic.autogenerate.types
+2026-09-21 19:58:44,820 - alembic.runtime.plugins - INFO - setup plugin alembic.autogenerate.constraints
+2026-09-21 19:58:44,820 - alembic.runtime.plugins - INFO - setup plugin alembic.autogenerate.defaults
+2026-09-21 19:58:44,820 - alembic.runtime.plugins - INFO - setup plugin alembic.autogenerate.comments
+2026-09-21 19:58:45,931 - flwr - WARNING - DEPRECATED FEATURE: flwr.simulation.start_simulation() is deprecated.
+	Instead, use the `flwr run` CLI command to start a local simulation in your Flower app, as shown for example below:
+
+		$ flwr new  # Create a new Flower app from a template
+
+		$ flwr run  # Run the Flower app in Simulation Mode
+
+	Using `start_simulation()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+2026-09-21 19:58:45,931 - flwr - INFO - Starting Flower simulation, config: num_rounds=10, no round_timeout

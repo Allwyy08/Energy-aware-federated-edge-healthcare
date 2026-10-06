@@ -1,0 +1,10 @@
+flwr[simulation]>=1.8.0
+torch
+torchvision
+numpy
+matplotlib
+flask
+fastapi
+uvicorn
+pandas
+

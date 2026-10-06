@@ -1,0 +1,9 @@
+{
+  "experiment_name": "fedasync_dqn",
+  "total_rounds": 10,
+  "final_accuracy": 0.8533,
+  "final_loss": 0.0209,
+  "total_energy_drain_pct": 10.54,
+  "total_training_time_sec": 0.35,
+  "avg_round_latency_ms": 27.9
+}

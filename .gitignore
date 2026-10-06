@@ -1,0 +1,12 @@
+
+# Android build files
+Android/.gradle/
+Android/build/
+Android/app/build/
+Android/local.properties
+
+# Android generated files
+Android/.gradle/
+Android/build/
+Android/app/build/
+Android/local.properties
